@@ -108,6 +108,10 @@ fun getWord(key: String, lang: String): String {
 fun AuthScreen(viewModel: HisaabViewModel, lang: String) {
     val coroutineScope = rememberCoroutineScope()
     var isGoogleLoading by remember { mutableStateOf(false) }
+    var showGoogleChooser by remember { mutableStateOf(false) }
+    var showCustomGoogleInput by remember { mutableStateOf(false) }
+    var customGoogleEmail by remember { mutableStateOf("") }
+    var customGoogleName by remember { mutableStateOf("") }
     var isSignUp by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
@@ -183,12 +187,7 @@ fun AuthScreen(viewModel: HisaabViewModel, lang: String) {
                     Button(
                         onClick = {
                             if (!isGoogleLoading) {
-                                isGoogleLoading = true
-                                coroutineScope.launch {
-                                    delay(1500) // Realistic authenticating delay
-                                    viewModel.login("2026shakil@gmail.com", "Shakil Ahmed", "1234")
-                                    isGoogleLoading = false
-                                }
+                                showGoogleChooser = true
                             }
                         },
                         colors = ButtonDefaults.buttonColors(
@@ -358,6 +357,186 @@ fun AuthScreen(viewModel: HisaabViewModel, lang: String) {
             Spacer(modifier = Modifier.height(48.dp))
         }
     }
+
+    if (showGoogleChooser) {
+        AlertDialog(
+            onDismissRequest = { showGoogleChooser = false },
+            title = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_google_logo),
+                        contentDescription = "Google",
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Choose an account", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+                    Text("to continue to Hisaab", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // Existing Account 1
+                    Card(
+                        onClick = {
+                            showGoogleChooser = false
+                            isGoogleLoading = true
+                            coroutineScope.launch {
+                                delay(1200)
+                                viewModel.login("2026shakil@gmail.com", "Shakil Ahmed", "1234")
+                                isGoogleLoading = false
+                            }
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFE8F0FE)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("SA", fontWeight = FontWeight.Bold, color = Color(0xFF1A73E8), fontSize = 14.sp)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text("Shakil Ahmed", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("2026shakil@gmail.com", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+
+                    // Existing Account 2
+                    Card(
+                        onClick = {
+                            showGoogleChooser = false
+                            isGoogleLoading = true
+                            coroutineScope.launch {
+                                delay(1200)
+                                viewModel.login("shakil.dev@gmail.com", "Shakil Dev", "1234")
+                                isGoogleLoading = false
+                            }
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFEDFBF3)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("SD", fontWeight = FontWeight.Bold, color = Color(0xFF0F9D58), fontSize = 14.sp)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text("Shakil Dev", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text("shakil.dev@gmail.com", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+
+                    // Custom Account Choice
+                    Card(
+                        onClick = {
+                            showGoogleChooser = false
+                            showCustomGoogleInput = true
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(imageVector = Icons.Default.Add, contentDescription = "Add Account", modifier = Modifier.size(18.dp))
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text("Use another Google account", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showGoogleChooser = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showCustomGoogleInput) {
+        AlertDialog(
+            onDismissRequest = { showCustomGoogleInput = false },
+            title = { Text("Sign in with Google", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Enter the Google account details you wish to sign in with:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(
+                        value = customGoogleName,
+                        onValueChange = { customGoogleName = it },
+                        label = { Text("Full Name") },
+                        placeholder = { Text("e.g. Shakil Chowdhury") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = customGoogleEmail,
+                        onValueChange = { customGoogleEmail = it },
+                        label = { Text("Google Email") },
+                        placeholder = { Text("username@gmail.com") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (customGoogleEmail.isNotBlank()) {
+                            showCustomGoogleInput = false
+                            isGoogleLoading = true
+                            coroutineScope.launch {
+                                delay(1500)
+                                val finalName = customGoogleName.ifBlank { customGoogleEmail.substringBefore("@") }
+                                viewModel.login(customGoogleEmail, finalName, "1234")
+                                isGoogleLoading = false
+                            }
+                        }
+                    },
+                    enabled = customGoogleEmail.contains("@") && customGoogleEmail.length > 5
+                ) {
+                    Text("Sign In")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCustomGoogleInput = false }) {
+                    Text("Back")
+                }
+            }
+        )
+    }
 }
 
 // --- Main Container with bottom tabs ---
@@ -502,9 +681,22 @@ fun MainContainer(viewModel: HisaabViewModel, lang: String) {
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(modifier = Modifier.padding(padding)) {
+            var editingTransaction by remember { mutableStateOf<Transaction?>(null) }
+
             when (activeTab) {
-                0 -> DashboardScreen(viewModel = viewModel, currency = currencySymbol, lang = lang, onAddClick = { showAddSheet = true })
-                1 -> TransactionsScreen(viewModel = viewModel, currency = currencySymbol, lang = lang)
+                0 -> DashboardScreen(
+                    viewModel = viewModel,
+                    currency = currencySymbol,
+                    lang = lang,
+                    onAddClick = { showAddSheet = true },
+                    onTxClick = { editingTransaction = it }
+                )
+                1 -> TransactionsScreen(
+                    viewModel = viewModel,
+                    currency = currencySymbol,
+                    lang = lang,
+                    onTxClick = { editingTransaction = it }
+                )
                 2 -> ReportsScreen(viewModel = viewModel, currency = currencySymbol, lang = lang)
                 3 -> BudgetScreen(viewModel = viewModel, currency = currencySymbol, lang = lang)
                 4 -> ProfileScreen(viewModel = viewModel, currency = currencySymbol, lang = lang)
@@ -516,6 +708,16 @@ fun MainContainer(viewModel: HisaabViewModel, lang: String) {
                     currency = currencySymbol,
                     lang = lang,
                     onDismiss = { showAddSheet = false }
+                )
+            }
+
+            if (editingTransaction != null) {
+                EditTransactionSheet(
+                    tx = editingTransaction!!,
+                    viewModel = viewModel,
+                    currency = currencySymbol,
+                    lang = lang,
+                    onDismiss = { editingTransaction = null }
                 )
             }
         }
@@ -681,19 +883,22 @@ fun AddTransactionSheet(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(currency, fontSize = 36.sp, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        BasicTextField(
+                        Spacer(modifier = Modifier.width(12.dp))
+                        OutlinedTextField(
                             value = amount,
                             onValueChange = { amount = it },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             textStyle = LocalTextStyle.current.copy(
-                                fontSize = 42.sp,
+                                fontSize = 28.sp,
                                 fontWeight = FontWeight.Black,
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurface
                             ),
+                            placeholder = { Text("0.00", fontSize = 24.sp) },
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
                             modifier = Modifier
-                                .width(120.dp)
+                                .width(180.dp)
                                 .testTag("amount_input")
                         )
                     }
@@ -973,9 +1178,431 @@ fun AddTransactionSheet(
     )
 }
 
+// --- Dynamic Interactive Dialog / Modal Sheet for Editing transaction ---
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditTransactionSheet(
+    tx: Transaction,
+    viewModel: HisaabViewModel,
+    currency: String,
+    lang: String,
+    onDismiss: () -> Unit
+) {
+    var amount by remember { mutableStateOf(tx.amount.toString()) }
+    var note by remember { mutableStateOf(tx.note) }
+    var type by remember { mutableStateOf(tx.type) } // "INCOME", "EXPENSE", "TRANSFER"
+    var category by remember { mutableStateOf(tx.category) }
+    var account by remember { mutableStateOf(tx.account) }
+    var toAccount by remember { mutableStateOf(tx.toAccount ?: "City Bank") }
+    val calendarState = remember { Calendar.getInstance().apply { timeInMillis = tx.date } }
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    val formattedDateString = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(calendarState.time)
+
+    val incomeCategories = listOf("Salary", "Business", "Freelancing", "Investment", "Gift", "Other")
+    val expenseCategories = listOf("Food", "Transportation", "Shopping", "Bills", "Medical", "Education", "Entertainment", "Travel", "Rent", "Other")
+    val accounts = listOf("Cash Wallet", "City Bank", "bKash", "Nagad", "Rocket", "Upay")
+
+    // Icons map helper
+    val catIcons = mapOf(
+        "Salary" to Icons.Default.Work,
+        "Business" to Icons.Default.Dashboard,
+        "Freelancing" to Icons.Default.ReceiptLong,
+        "Investment" to Icons.Default.BarChart,
+        "Gift" to Icons.Default.Person,
+        "Food" to Icons.Default.Restaurant,
+        "Transportation" to Icons.Default.Dashboard,
+        "Shopping" to Icons.Default.ShoppingBag,
+        "Bills" to Icons.Default.ReceiptLong,
+        "Medical" to Icons.Default.Add,
+        "Education" to Icons.Default.Settings,
+        "Rent" to Icons.Default.Person,
+        "Travel" to Icons.Default.Dashboard,
+        "Entertainment" to Icons.Default.BarChart,
+        "Other" to Icons.Default.Add
+    )
+
+    // Trigger categories list based on type
+    val activeCategories = if (type == "INCOME") incomeCategories else expenseCategories
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = tx.date)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let {
+                        calendarState.timeInMillis = it
+                    }
+                    showDatePicker = false
+                }) {
+                    Text("OK")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        confirmButton = {},
+        dismissButton = {},
+        text = {
+            Card(
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Header bar
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onDismiss) {
+                            Icon(imageVector = Icons.Default.Add, contentDescription = "Close", modifier = Modifier.size(24.dp))
+                        }
+                        Text(
+                            text = "Edit Transaction",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        IconButton(onClick = {}) {
+                            Icon(imageVector = Icons.Default.Add, contentDescription = "History", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Type Toggle button bar
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                MaterialTheme.colorScheme.surfaceContainer,
+                                RoundedCornerShape(20.dp)
+                            )
+                            .padding(4.dp)
+                    ) {
+                        val types = listOf("EXPENSE", "INCOME", "TRANSFER")
+                        types.forEach { t ->
+                            val isSel = type == t
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(if (isSel) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                    .clickable {
+                                        type = t
+                                        category = if (t == "INCOME") "Salary" else "Food"
+                                    }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    t,
+                                    color = if (isSel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Input Value Area
+                    Text(
+                        getWord("amount", lang),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(currency, fontSize = 36.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        OutlinedTextField(
+                            value = amount,
+                            onValueChange = { amount = it },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            textStyle = LocalTextStyle.current.copy(
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Black,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurface
+                            ),
+                            placeholder = { Text("0.00", fontSize = 24.sp) },
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            modifier = Modifier
+                                .width(180.dp)
+                                .testTag("amount_edit_input")
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Category Selector grid
+                    if (type != "TRANSFER") {
+                        Text(
+                            getWord("category", lang),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp)
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            activeCategories.forEach { cat ->
+                                val isSel = category == cat
+                                val brushIcon = catIcons[cat] ?: Icons.Default.Add
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(
+                                            if (isSel) MaterialTheme.colorScheme.secondaryContainer
+                                            else MaterialTheme.colorScheme.surfaceContainer
+                                        )
+                                        .border(
+                                            1.dp,
+                                            if (isSel) MaterialTheme.colorScheme.secondary
+                                            else Color.Transparent,
+                                            RoundedCornerShape(16.dp)
+                                        )
+                                        .clickable { category = cat }
+                                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = brushIcon,
+                                            contentDescription = cat,
+                                            tint = if (isSel) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            cat,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isSel) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+
+                    // Account selections & date selectors
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Date picker
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                getWord("date", lang),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                                    .clickable { showDatePicker = true }
+                                    .padding(vertical = 12.dp, horizontal = 12.dp),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(formattedDateString, fontSize = 14.sp)
+                                    Icon(imageVector = Icons.Default.BarChart, contentDescription = "Date", modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
+
+                        // From Account picker
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                if (type == "TRANSFER") "From Account" else getWord("account", lang),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                            var showAccMenu by remember { mutableStateOf(false) }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                                    .clickable { showAccMenu = true }
+                                    .padding(vertical = 12.dp, horizontal = 12.dp),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(account, fontSize = 14.sp)
+                                    Icon(imageVector = Icons.Default.Add, contentDescription = "Drop", modifier = Modifier.size(16.dp))
+                                }
+                                DropdownMenu(expanded = showAccMenu, onDismissRequest = { showAccMenu = false }) {
+                                    accounts.forEach { acc ->
+                                        DropdownMenuItem(
+                                            text = { Text(acc) },
+                                            onClick = {
+                                                account = acc
+                                                showAccMenu = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // To Account Picker (only for transfers)
+                    if (type == "TRANSFER") {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                "To Account",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                            var showToAccMenu by remember { mutableStateOf(false) }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                                    .clickable { showToAccMenu = true }
+                                    .padding(vertical = 12.dp, horizontal = 12.dp),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(toAccount, fontSize = 14.sp)
+                                    Icon(imageVector = Icons.Default.Add, contentDescription = "Drop", modifier = Modifier.size(16.dp))
+                                }
+                                DropdownMenu(expanded = showToAccMenu, onDismissRequest = { showToAccMenu = false }) {
+                                    accounts.forEach { acc ->
+                                        DropdownMenuItem(
+                                            text = { Text(acc) },
+                                            onClick = {
+                                                toAccount = acc
+                                                showToAccMenu = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Note content field
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            getWord("note", lang),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        OutlinedTextField(
+                            value = note,
+                            onValueChange = { note = it },
+                            placeholder = { Text("What was this for?") },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Save transaction trigger button
+                    Button(
+                        onClick = {
+                            val amt = amount.toDoubleOrNull() ?: 0.0
+                            if (amt > 0.0) {
+                                viewModel.updateTransaction(
+                                    tx.copy(
+                                        type = type,
+                                        amount = amt,
+                                        category = if (type == "TRANSFER") "Transfer" else category,
+                                        date = calendarState.timeInMillis,
+                                        account = account,
+                                        toAccount = if (type == "TRANSFER") toAccount else null,
+                                        note = note.ifEmpty { if (type == "TRANSFER") "Transfer to $toAccount" else category }
+                                    )
+                                )
+                                onDismiss()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        shape = RoundedCornerShape(24.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .testTag("save_expense_button")
+                    ) {
+                        Text("Save Changes", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    )
+}
+
 // --- Dashboard Screen tab ---
 @Composable
-fun DashboardScreen(viewModel: HisaabViewModel, currency: String, lang: String, onAddClick: () -> Unit) {
+fun DashboardScreen(
+    viewModel: HisaabViewModel,
+    currency: String,
+    lang: String,
+    onAddClick: () -> Unit,
+    onTxClick: (Transaction) -> Unit
+) {
     val txs by viewModel.transactions.collectAsStateWithLifecycle()
     val isBalanceHidden by viewModel.isBalanceHidden.collectAsStateWithLifecycle()
 
@@ -1218,7 +1845,7 @@ fun DashboardScreen(viewModel: HisaabViewModel, currency: String, lang: String, 
             }
         } else {
             txs.take(5).forEach { tx ->
-                TransactionRowItem(tx = tx, currency = currency)
+                TransactionRowItem(tx = tx, currency = currency, onClick = { onTxClick(tx) })
             }
         }
 
@@ -1228,7 +1855,12 @@ fun DashboardScreen(viewModel: HisaabViewModel, currency: String, lang: String, 
 
 // Custom Transaction design row
 @Composable
-fun TransactionRowItem(tx: Transaction, currency: String, onDelete: (() -> Unit)? = null) {
+fun TransactionRowItem(
+    tx: Transaction,
+    currency: String,
+    onClick: () -> Unit = {},
+    onDelete: (() -> Unit)? = null
+) {
     val isExpense = tx.type == "EXPENSE"
     val isTransfer = tx.type == "TRANSFER"
 
@@ -1245,7 +1877,8 @@ fun TransactionRowItem(tx: Transaction, currency: String, onDelete: (() -> Unit)
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            .clickable { onClick() },
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
     ) {
         Row(
@@ -1304,7 +1937,12 @@ fun TransactionRowItem(tx: Transaction, currency: String, onDelete: (() -> Unit)
 
 // --- Transactions List with Advanced Search Filters tab ---
 @Composable
-fun TransactionsScreen(viewModel: HisaabViewModel, currency: String, lang: String) {
+fun TransactionsScreen(
+    viewModel: HisaabViewModel,
+    currency: String,
+    lang: String,
+    onTxClick: (Transaction) -> Unit
+) {
     val txs by viewModel.filteredTransactions.collectAsStateWithLifecycle()
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
     val selCat by viewModel.selectedCategoryFilter.collectAsStateWithLifecycle()
@@ -1412,7 +2050,7 @@ fun TransactionsScreen(viewModel: HisaabViewModel, currency: String, lang: Strin
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
                 items(txs) { tx ->
-                    TransactionRowItem(tx = tx, currency = currency, onDelete = {
+                    TransactionRowItem(tx = tx, currency = currency, onClick = { onTxClick(tx) }, onDelete = {
                         viewModel.deleteTransaction(tx)
                     })
                 }
@@ -1953,6 +2591,12 @@ fun ProfileScreen(viewModel: HisaabViewModel, currency: String, lang: String) {
     var familyEmail by remember { mutableStateOf("") }
     var familyStatusMessage by remember { mutableStateOf("") }
 
+    var showSwitchGoogleDialog by remember { mutableStateOf(false) }
+    var showCustomGoogleInput by remember { mutableStateOf(false) }
+    var customGoogleName by remember { mutableStateOf("") }
+    var customGoogleEmail by remember { mutableStateOf("") }
+    val coroutineScope = rememberCoroutineScope()
+
     val totalSavings = txs.filter { it.type == "INCOME" }.sumOf { it.amount } - txs.filter { it.type == "EXPENSE" }.sumOf { it.amount }
 
     Column(
@@ -1990,7 +2634,23 @@ fun ProfileScreen(viewModel: HisaabViewModel, currency: String, lang: String) {
                 Text(name.ifEmpty { "Shakil Ahmed" }, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
                 Text(email.ifEmpty { "2026shakil@gmail.com" }, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = { showSwitchGoogleDialog = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.height(36.dp).padding(horizontal = 16.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Person, contentDescription = "Switch Account", modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Change Google Account", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -2244,6 +2904,162 @@ fun ProfileScreen(viewModel: HisaabViewModel, currency: String, lang: String) {
                         familyStatusMessage = ""
                     }) {
                         Text("Close")
+                    }
+                }
+            )
+        }
+
+        if (showSwitchGoogleDialog) {
+            AlertDialog(
+                onDismissRequest = { showSwitchGoogleDialog = false },
+                title = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_google_logo),
+                            contentDescription = "Google",
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Switch Google account", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text("connected to Hisaab", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        // Account 1
+                        Card(
+                            onClick = {
+                                showSwitchGoogleDialog = false
+                                coroutineScope.launch {
+                                    viewModel.login("2026shakil@gmail.com", "Shakil Ahmed", "1234")
+                                    android.widget.Toast.makeText(context, "Switched Google Account to Shakil Ahmed!", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier.size(36.dp).clip(CircleShape).background(Color(0xFFE8F0FE)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("SA", fontWeight = FontWeight.Bold, color = Color(0xFF1A73E8), fontSize = 14.sp)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text("Shakil Ahmed", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text("2026shakil@gmail.com", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+
+                        // Account 2
+                        Card(
+                            onClick = {
+                                showSwitchGoogleDialog = false
+                                coroutineScope.launch {
+                                    viewModel.login("shakil.dev@gmail.com", "Shakil Dev", "1234")
+                                    android.widget.Toast.makeText(context, "Switched Google Account to Shakil Dev!", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier.size(36.dp).clip(CircleShape).background(Color(0xFFEDFBF3)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("SD", fontWeight = FontWeight.Bold, color = Color(0xFF0F9D58), fontSize = 14.sp)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text("Shakil Dev", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text("shakil.dev@gmail.com", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+
+                        // Use another Google account
+                        Card(
+                            onClick = {
+                                showSwitchGoogleDialog = false
+                                showCustomGoogleInput = true
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(18.dp))
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text("Use another Google account", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = { showSwitchGoogleDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        if (showCustomGoogleInput) {
+            AlertDialog(
+                onDismissRequest = { showCustomGoogleInput = false },
+                title = { Text("Sign in with Google", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Enter the Google account details you wish to sign in with:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        OutlinedTextField(
+                            value = customGoogleName,
+                            onValueChange = { customGoogleName = it },
+                            label = { Text("Full Name") },
+                            placeholder = { Text("e.g. Shakil Chowdhury") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = customGoogleEmail,
+                            onValueChange = { customGoogleEmail = it },
+                            label = { Text("Google Email") },
+                            placeholder = { Text("username@gmail.com") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (customGoogleEmail.isNotBlank()) {
+                                showCustomGoogleInput = false
+                                coroutineScope.launch {
+                                    val finalName = customGoogleName.ifBlank { customGoogleEmail.substringBefore("@") }
+                                    viewModel.login(customGoogleEmail, finalName, "1234")
+                                    android.widget.Toast.makeText(context, "Switched Google Account to $finalName!", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        },
+                        enabled = customGoogleEmail.contains("@") && customGoogleEmail.length > 5
+                    ) {
+                        Text("Connect")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCustomGoogleInput = false }) {
+                        Text("Back")
                     }
                 }
             )

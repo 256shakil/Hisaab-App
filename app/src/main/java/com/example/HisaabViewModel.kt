@@ -269,6 +269,55 @@ class HisaabViewModel(application: Application) : AndroidViewModel(application) 
     val isBackingUp = MutableStateFlow(false)
     val isRestoring = MutableStateFlow(false)
 
+    private fun serializeTransactions(list: List<Transaction>): String {
+        val delimiter = "|||"
+        val lineDelimiter = "###"
+        return list.joinToString(lineDelimiter) { tx ->
+            val safeNote = tx.note.replace("\n", " ").replace(delimiter, " ")
+            val safeAccount = tx.account.replace(delimiter, " ")
+            val safeToAccount = (tx.toAccount ?: "").replace(delimiter, " ")
+            val safeCategory = tx.category.replace(delimiter, " ")
+            "${tx.type}$delimiter${tx.amount}$delimiter$safeCategory$delimiter${tx.date}$delimiter$safeAccount$delimiter$safeToAccount$delimiter$safeNote"
+        }
+    }
+
+    private fun deserializeTransactions(serialized: String): List<Transaction> {
+        if (serialized.isEmpty()) return emptyList()
+        val delimiter = "|||"
+        val lineDelimiter = "###"
+        val lines = serialized.split(lineDelimiter)
+        val result = mutableListOf<Transaction>()
+        for (line in lines) {
+            if (line.isBlank()) continue
+            val parts = line.split(delimiter)
+            if (parts.size >= 7) {
+                try {
+                    val type = parts[0]
+                    val amount = parts[1].toDoubleOrNull() ?: 0.0
+                    val category = parts[2]
+                    val date = parts[3].toLongOrNull() ?: System.currentTimeMillis()
+                    val account = parts[4]
+                    val toAccount = parts[5].ifBlank { null }
+                    val note = parts[6]
+                    result.add(
+                        Transaction(
+                            type = type,
+                            amount = amount,
+                            category = category,
+                            date = date,
+                            account = account,
+                            toAccount = toAccount,
+                            note = note
+                        )
+                    )
+                } catch (e: Exception) {
+                    // Skip corrupt line
+                }
+            }
+        }
+        return result
+    }
+
     fun backupToGoogleDrive(onComplete: (Boolean) -> Unit) {
         viewModelScope.launch {
             isBackingUp.value = true
@@ -276,8 +325,11 @@ class HisaabViewModel(application: Application) : AndroidViewModel(application) 
             kotlinx.coroutines.delay(1500)
             
             val txList = transactions.value
+            val serialized = serializeTransactions(txList)
+            
             val edit = sharedPrefs.edit()
             edit.putInt("backup_tx_count", txList.size)
+            edit.putString("backup_tx_data", serialized)
             
             val formatter = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
             val nowStr = formatter.format(Date())
@@ -295,15 +347,27 @@ class HisaabViewModel(application: Application) : AndroidViewModel(application) 
             isRestoring.value = true
             kotlinx.coroutines.delay(1500)
             
-            val txCount = sharedPrefs.getInt("backup_tx_count", 0)
-            if (txCount == 0) {
-                isRestoring.value = false
-                onComplete(false, "No backup found in your Google Drive.")
-                return@launch
+            val serialized = sharedPrefs.getString("backup_tx_data", "") ?: ""
+            if (serialized.isEmpty()) {
+                val txCount = sharedPrefs.getInt("backup_tx_count", 0)
+                if (txCount == 0) {
+                    isRestoring.value = false
+                    onComplete(false, "No backup found in your Google Drive.")
+                    return@launch
+                }
             }
             
-            isRestoring.value = false
-            onComplete(true, "Successfully restored $txCount transactions and budget markers from Google Drive.")
+            val restoredList = deserializeTransactions(serialized)
+            if (restoredList.isNotEmpty()) {
+                for (tx in restoredList) {
+                    repository.insertTransaction(tx)
+                }
+                isRestoring.value = false
+                onComplete(true, "Successfully restored ${restoredList.size} transactions from Google Drive.")
+            } else {
+                isRestoring.value = false
+                onComplete(false, "No valid backup entries found to restore.")
+            }
         }
     }
 
