@@ -106,6 +106,7 @@ fun getWord(key: String, lang: String): String {
 // --- Auth Section ---
 @Composable
 fun AuthScreen(viewModel: HisaabViewModel, lang: String) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var isGoogleLoading by remember { mutableStateOf(false) }
     var showGoogleChooser by remember { mutableStateOf(false) }
@@ -310,14 +311,36 @@ fun AuthScreen(viewModel: HisaabViewModel, lang: String) {
                     // Buttons
                     Button(
                         onClick = {
-                            if (email.isNotEmpty() && password.isNotEmpty()) {
-                                if (isSignUp) {
-                                    viewModel.register(email, name.ifEmpty { "Hisaab User" }, "1234")
-                                } else {
-                                    viewModel.login(email, "Shakil Ahmed", "1234")
-                                }
+                            val trimmedEmail = email.trim()
+                            val trimmedPassword = password.trim()
+                            val trimmedName = name.trim()
+
+                            if (trimmedEmail.isEmpty() || trimmedPassword.isEmpty()) {
+                                val msg = if (lang == "BN") "অনুগ্রহ করে ইমেল এবং পাসওয়ার্ড উভয়ই লিখুন।" else "Please enter both Email and Password."
+                                android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+                            } else if (!trimmedEmail.contains("@") || trimmedEmail.length < 5) {
+                                val msg = if (lang == "BN") "একটি সঠিক ইমেল ঠিকানা লিখুন।" else "Please enter a valid Email address."
+                                android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+                            } else if (trimmedPassword.length < 4) {
+                                val msg = if (lang == "BN") "পাসওয়ার্ড অন্তত ৪ অক্ষরের হতে হবে।" else "Password must be at least 4 characters."
+                                android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
                             } else {
-                                viewModel.login("2026shakil@gmail.com", "Shakil Ahmed", "1234")
+                                if (isSignUp) {
+                                    if (trimmedName.isEmpty()) {
+                                        val msg = if (lang == "BN") "অনুগ্রহ করে আপনার পুরো নাম লিখুন।" else "Please enter your full name."
+                                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+                                    } else {
+                                        viewModel.register(trimmedEmail, trimmedName, "1234")
+                                        val msg = if (lang == "BN") "অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে!" else "Account successfully created!"
+                                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    // Extract display name or use fallback
+                                    val displayName = if (trimmedEmail.equals("2026shakil@gmail.com", ignoreCase = true)) "Shakil Ahmed" else trimmedEmail.substringBefore("@")
+                                    viewModel.login(trimmedEmail, displayName, "1234")
+                                    val msg = if (lang == "BN") "লগইন সফল হয়েছে!" else "Login successful!"
+                                    android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                                }
                             }
                         },
                         colors = ButtonDefaults.buttonColors(
@@ -2581,6 +2604,7 @@ fun ProfileScreen(viewModel: HisaabViewModel, currency: String, lang: String) {
     val email by viewModel.loggedInUserEmail.collectAsStateWithLifecycle()
     val name by viewModel.loggedInUserName.collectAsStateWithLifecycle()
     val txs by viewModel.transactions.collectAsStateWithLifecycle()
+    val userAvatar by viewModel.userAvatar.collectAsStateWithLifecycle()
     
     val lastBackupTime by viewModel.lastBackupTime.collectAsStateWithLifecycle()
     val isBackingUp by viewModel.isBackingUp.collectAsStateWithLifecycle()
@@ -2595,6 +2619,7 @@ fun ProfileScreen(viewModel: HisaabViewModel, currency: String, lang: String) {
     var showCustomGoogleInput by remember { mutableStateOf(false) }
     var customGoogleName by remember { mutableStateOf("") }
     var customGoogleEmail by remember { mutableStateOf("") }
+    var showAvatarChooser by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
     val totalSavings = txs.filter { it.type == "INCOME" }.sumOf { it.amount } - txs.filter { it.type == "EXPENSE" }.sumOf { it.amount }
@@ -2618,15 +2643,30 @@ fun ProfileScreen(viewModel: HisaabViewModel, currency: String, lang: String) {
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Large Avatar icon representation
+                // Interactive Dynamic profile avatar
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
+                        .size(88.dp)
+                        .testTag("change_profile_picture_trigger")
+                        .clickable { showAvatarChooser = true },
+                    contentAlignment = Alignment.BottomEnd
                 ) {
-                    Icon(imageVector = Icons.Default.Person, contentDescription = "Avatar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp))
+                    RenderAvatar(userAvatar, name.ifEmpty { "Shakil Ahmed" }, size = 80.dp, iconSize = 44.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(26.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                            .border(1.5.dp, Color.White, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Profile Picture",
+                            tint = Color.White,
+                            modifier = Modifier.size(13.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -3065,6 +3105,86 @@ fun ProfileScreen(viewModel: HisaabViewModel, currency: String, lang: String) {
             )
         }
 
+        if (showAvatarChooser) {
+            AlertDialog(
+                onDismissRequest = { showAvatarChooser = false },
+                title = {
+                    Text(
+                        text = if (lang == "BN") "প্রোফাইল পিকচার সিলেক্ট করুন" else "Select Profile Picture",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text(
+                            text = if (lang == "BN") "আপনার স্টাইল অনুযায়ী একটি চমৎকার আইকন বা মনোগ্রাম ব্যাকগ্রাউন্ড বেছে নিন:" else "Select an icon gradient or customized monogram background theme:",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        
+                        val items = listOf(
+                            "avatar_1" to (if (lang == "BN") "ক্লাসিক" else "Classic"),
+                            "avatar_2" to (if (lang == "BN") "ফাইন্যান্স" else "Finance"),
+                            "avatar_3" to (if (lang == "BN") "ট্রেন্ডস" else "Trends"),
+                            "avatar_4" to (if (lang == "BN") "সেভিংস" else "Savings"),
+                            "avatar_5" to (if (lang == "BN") "ভায়োলেট" else "Violet"),
+                            "avatar_6" to (if (lang == "BN") "টিল" else "Teal"),
+                            "avatar_7" to (if (lang == "BN") "সানসেট" else "Sunset"),
+                            "avatar_8" to (if (lang == "BN") "ওশান" else "Ocean"),
+                            "avatar_9" to (if (lang == "BN") "ষ্টার" else "Star")
+                        )
+                        val chunked = items.chunked(3)
+                        
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            chunked.forEach { rowItems ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    rowItems.forEach { (id, label) ->
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(if (userAvatar == id) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                                                .border(
+                                                    1.5.dp,
+                                                    if (userAvatar == id) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                                    RoundedCornerShape(12.dp)
+                                                )
+                                                .clickable { 
+                                                    viewModel.updateAvatar(id)
+                                                }
+                                                .padding(8.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                RenderAvatar(id, name.ifBlank { "Shakil Ahmed" }, size = 44.dp, iconSize = 24.dp, textSize = 15.sp)
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                            }
+                                        }
+                                    }
+                                    repeat(3 - rowItems.size) {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { showAvatarChooser = false },
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(if (lang == "BN") "সম্পন্ন" else "Done")
+                    }
+                }
+            )
+        }
+
         Spacer(modifier = Modifier.height(100.dp))
     }
 }
@@ -3072,4 +3192,134 @@ fun ProfileScreen(viewModel: HisaabViewModel, currency: String, lang: String) {
 // Format Money Utility Helper representation
 fun formatMoney(amount: Double): String {
     return String.format(Locale.US, "%,.0f", amount)
+}
+
+@Composable
+fun RenderAvatar(
+    avatarId: String,
+    name: String,
+    size: androidx.compose.ui.unit.Dp = 80.dp,
+    iconSize: androidx.compose.ui.unit.Dp = 48.dp,
+    textSize: androidx.compose.ui.unit.TextUnit = 24.sp
+) {
+    val initials = if (name.isNotBlank()) {
+        name.trim().split("\\s+".toRegex()).take(2).map { it.firstOrNull()?.uppercase() ?: "" }.joinToString("")
+    } else {
+        "H"
+    }
+
+    val themeColor = MaterialTheme.colorScheme.primary
+
+    when (avatarId) {
+        "avatar_1" -> { // Classic Person Blue
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(Color(0xFF4285F4), Color(0xFF1967D2)))),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(imageVector = Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(iconSize))
+            }
+        }
+        "avatar_2" -> { // Green Paid / Finance
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(Color(0xFF34A853), Color(0xFF137333)))),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(imageVector = Icons.Default.Paid, contentDescription = null, tint = Color.White, modifier = Modifier.size(iconSize))
+            }
+        }
+        "avatar_3" -> { // Indigo Trends
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(Color(0xFF673AB7), Color(0xFF512DA8)))),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(imageVector = Icons.Default.TrendingUp, contentDescription = null, tint = Color.White, modifier = Modifier.size(iconSize))
+            }
+        }
+        "avatar_4" -> { // Orange Savings
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(Color(0xFFFF9800), Color(0xFFE65100)))),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(imageVector = Icons.Default.Savings, contentDescription = null, tint = Color.White, modifier = Modifier.size(iconSize))
+            }
+        }
+        "avatar_5" -> { // Violet Text Monogram
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(Color(0xFF9C27B0), Color(0xFF7B1FA2)))),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = initials, color = Color.White, fontSize = textSize, fontWeight = FontWeight.Bold)
+            }
+        }
+        "avatar_6" -> { // Teal Text Monogram
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(Color(0xFF009688), Color(0xFF00796B)))),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = initials, color = Color.White, fontSize = textSize, fontWeight = FontWeight.Bold)
+            }
+        }
+        "avatar_7" -> { // Sunset Text Monogram
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(Color(0xFFFF5722), Color(0xFFD84315)))),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = initials, color = Color.White, fontSize = textSize, fontWeight = FontWeight.Bold)
+            }
+        }
+        "avatar_8" -> { // Ocean Blue Text Monogram
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(Color(0xFF03A9F4), Color(0xFF0288D1)))),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = initials, color = Color.White, fontSize = textSize, fontWeight = FontWeight.Bold)
+            }
+        }
+        "avatar_9" -> { // Gold Star
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(Color(0xFFFBC02D), Color(0xFFF57F17)))),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(imageVector = Icons.Default.Star, contentDescription = null, tint = Color.White, modifier = Modifier.size(iconSize))
+            }
+        }
+        else -> { // Dynamic Fallback
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(themeColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(imageVector = Icons.Default.Person, contentDescription = null, tint = themeColor, modifier = Modifier.size(iconSize))
+            }
+        }
+    }
 }

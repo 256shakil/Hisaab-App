@@ -44,6 +44,7 @@ class HisaabViewModel(application: Application) : AndroidViewModel(application) 
     val loggedInUserEmail = MutableStateFlow(sharedPrefs.getString("user_email", "") ?: "")
     val loggedInUserName = MutableStateFlow(sharedPrefs.getString("user_name", "") ?: "")
     val securityPin = MutableStateFlow(sharedPrefs.getString("pin_code", "") ?: "")
+    val userAvatar = MutableStateFlow(sharedPrefs.getString("user_avatar", "avatar_1") ?: "avatar_1")
 
     // Filtered transaction flow
     val filteredTransactions: StateFlow<List<Transaction>> = combine(
@@ -170,17 +171,24 @@ class HisaabViewModel(application: Application) : AndroidViewModel(application) 
         login(email, name, pin)
     }
 
+    fun updateAvatar(avatarId: String) {
+        userAvatar.value = avatarId
+        sharedPrefs.edit().putString("user_avatar", avatarId).apply()
+    }
+
     fun logout() {
         isLoggedIn.value = false
         loggedInUserEmail.value = ""
         loggedInUserName.value = ""
         securityPin.value = ""
+        userAvatar.value = "avatar_1"
 
         sharedPrefs.edit()
             .putBoolean("is_logged_in", false)
             .putString("user_email", "")
             .putString("user_name", "")
             .putString("pin_code", "")
+            .putString("user_avatar", "avatar_1")
             .apply()
     }
 
