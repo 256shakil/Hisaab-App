@@ -1,0 +1,6 @@
+{
+  "name": "Hisaab",
+  "description": "Personal Finance & Expense Tracker App - Track Every Taka, Build Your Future",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
